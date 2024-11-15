@@ -23,7 +23,7 @@ app.post('/slack/events', (req, res) => {
         const user = event.user
 
          // Check for specific content in the message and reply accordingly
-         if (message.includes(' ov') && user!=='U080K2QSZL3' ) {
+         if (message.includes('ov') && user!=='U080K2QSZL3' ) {
             // Post a reply back to the channel
             const reply = {
                 channel: event.channel,
