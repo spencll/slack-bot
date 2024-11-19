@@ -5,12 +5,35 @@ const axios = require('axios');
 const http = require('http');
 const ngrok = require('@ngrok/ngrok');
 const app = express();
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 app.use(bodyParser.json());
 
 app.get('/test', (req, res) => { 
     res.send('Server is working!')});
 
-app.post('/slack/events', (req, res) => {
+async function responseAI(prompt) {
+
+    // Initialize Google Generative AI client
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    
+        // Make a synchronous chat completion request to the Gemini API using the GoogleGenerativeAI client
+        const model = genAI.getGenerativeModel({
+        model: "gemini-1.5-flash"
+        });
+    
+    try {
+        const result = await model.generateContent(prompt);
+        const text = result.response.text() || "Sorry, I couldn't generate a response."
+        return text
+    } catch (error) {
+        console.error('Error processing request:', error);
+        throw new Error('Internal Server Error');
+    }
+    }
+
+
+app.post('/slack/events', async (req, res) => {
     const { challenge, event } = req.body;    
     // Respond to Slack's URL verification challenge
     if (challenge) {
@@ -22,34 +45,54 @@ app.post('/slack/events', (req, res) => {
         const message = event.text.toLowerCase();
         const user = event.user
 
-         // Check for specific content in the message and reply accordingly
+         // Start of ov 
          if (message.includes('ov') && user!=='U080K2QSZL3' ) {
+
+            try{
+            //Prompting technician for reason for visit. 
+            const response = "What is the reason for the visit? Start reply with Reason: \nReason: patient is having blurry vision"
+
             // Post a reply back to the channel
             const reply = {
                 channel: event.channel,
-                text: 'Oh a office visit',
+                text: response,
             };
             // Make a call to Slack API to send the reply
             postMessage(reply);
+        }
+            catch (error){
+                console.error("Error sending response",error)
+            }
+
+        }
+
+        if (message.includes('reason:') && user!=='U080K2QSZL3' ) {
+
+            try{
+            //Process with AI
+            const response = await responseAI(`Here is the reason for visit for a patient at a eye doctor office. ${message}. What relevent testing do you suggest for the technicians to perform? No explaination needed. Technicians can do visual acuity, IOP, FDT, pachymetry, topography, auto-refractor, optos, and OCT.`)
+
+            // Post a reply back to the channel
+            const reply = {
+                channel: event.channel,
+                text: response,
+            };
+            // Make a call to Slack API to send the reply
+            postMessage(reply);
+        }
+            catch (error){
+                console.error("Error sending AI response",error)
+            }
+
         }
         
-        // Hello greeting
-        if (message.includes('hello') && user!=='U080K2QSZL3' ) {
-            // Post a reply back to the channel
-            const reply = {
-                channel: event.channel,
-                text: 'Hello! How can I assist you today?',
-            };
-            // Make a call to Slack API to send the reply
-            postMessage(reply);
-        }
     }
     res.sendStatus(200);
 });
 
 // Function to post a message to Slack
-function postMessage(message) {
-    axios.post('https://slack.com/api/chat.postMessage', message, {
+async function postMessage(message) {
+    await axios.post('https://slack.com/api/chat.postMessage', message, {
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.SLACK_API}`,
