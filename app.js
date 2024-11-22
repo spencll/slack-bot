@@ -44,9 +44,8 @@ app.post('/slack/events', async (req, res) => {
     if (event && event.type === 'message' && event.text) {
         const message = event.text.toLowerCase();
         const user = event.user
-
          // Start of ov 
-         if (message.includes('ov') && user!=='U080K2QSZL3' ) {
+         if (message.includes('ov') && message.includes('here') && user!==process.env.SLACK_BOT_ID ) {
 
             try{
             //Prompting technician for reason for visit. 
@@ -66,11 +65,11 @@ app.post('/slack/events', async (req, res) => {
 
         }
 
-        if (message.includes('reason:') && user!=='U080K2QSZL3' ) {
+        if (message.includes('reason:') && user!==process.env.SLACK_BOT_ID) {
 
             try{
             //Process with AI
-            const response = await responseAI(`Here is the reason for visit for a patient at a eye doctor office. ${message}. What relevent testing do you suggest for the technicians to perform? No explaination needed. Technicians can do visual acuity, IOP, FDT, pachymetry, topography, auto-refractor, optos, and OCT.`)
+            const response = await responseAI(`Here is the reason for visit for a patient at a eye doctor office. ${message}. What relevent testing do you suggest for the technicians to perform? No explaination. Technicians can do visual acuity, IOP, retinal imaging, and OCT`)
 
             // Post a reply back to the channel
             const reply = {
