@@ -32,7 +32,6 @@ async function responseAI(prompt) {
     }
     }
 
-
 app.post('/slack/events', async (req, res) => {
     const { challenge, event } = req.body;    
     // Respond to Slack's URL verification challenge
@@ -44,12 +43,15 @@ app.post('/slack/events', async (req, res) => {
     if (event && event.type === 'message' && event.text) {
         const message = event.text.toLowerCase();
         const user = event.user
-         // Start of ov 
-         if (message.includes('ov') && message.includes('here') && user!==process.env.SLACK_BOT_ID ) {
+
+        //Extracting OV from message. 
+        const isOV = (message) => /(?<!\S)ov(?!\S)/.test(message)
+      
+         if (isOV(message) && user!==process.env.SLACK_BOT_ID ) {
 
             try{
             //Prompting technician for reason for visit. 
-            const response = "What is the reason for the visit? Start reply with Reason: \nReason: patient is having blurry vision"
+            const response = "What is the reason for the visit? \nUse the format below. \nReason: patient is having blurry vision"
 
             // Post a reply back to the channel
             const reply = {
