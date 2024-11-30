@@ -6,6 +6,7 @@ const http = require('http');
 const ngrok = require('@ngrok/ngrok');
 const app = express();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { WebClient } = require('@slack/web-api');
 
 app.use(bodyParser.json());
 
@@ -100,6 +101,41 @@ async function postMessage(message) {
         }
     });
 }
+
+
+// Use the user OAuth token
+// const token = process.env.SLACK_USER_OAUTH;
+// const web = new WebClient(token);
+
+// async function fetchOutgoingDMs(userId) {
+//     try {
+//         // Get the list of direct message conversations for the user
+//         const result = await web.users.conversations({ user: userId, types: 'im' });
+//         const dmIds = result.channels.map(channel => channel.id);
+
+//         for (const dmId of dmIds) {
+//             // Fetch the conversation history for each DM
+//             const history = await web.conversations.history({ channel: dmId });
+//             // Filter messages sent by the specified user
+//             const userMessages = history.messages.filter(message => message.user === userId);
+            
+//             // Log the user messages
+//             userMessages.forEach(message => {
+//                 console.log(`${message.user}: ${message.text}`);
+//             });
+//         }
+//     } catch (error) {
+//         console.error(error);
+//     }
+// }
+
+
+
+
+
+
+
+
 
 // Create webserver
 http.createServer(app).listen(8080, () => console.log('Node.js web server at 8080 is running...'));
