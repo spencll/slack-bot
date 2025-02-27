@@ -7,6 +7,7 @@ const ngrok = require('@ngrok/ngrok');
 const app = express();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { WebClient } = require('@slack/web-api');
+const findPatient = require('./automation.js')
 
 app.use(bodyParser.json());
 
@@ -45,6 +46,23 @@ app.post('/slack/events', async (req, res) => {
         const message = event.text.toLowerCase();
         const user = event.user
 
+        if (message.includes("finalize")) {
+            function extractName(sentence) {
+                const regex = /(\w+),\s(\w+)/;
+                const match = sentence.match(regex);
+                if (match) {
+                  const lastName = match[1];
+                  const firstName = match[2];
+                  return `${lastName}, ${firstName}`;
+                } else {
+                  return null;
+                }
+        }
+        const name = extractName(message)
+        findPatient(name)
+    }
+
+
         //Extracting OV from message. 
         const isOV = (message) => /(?<!\S)ov(?!\S)/.test(message)
       
@@ -52,7 +70,7 @@ app.post('/slack/events', async (req, res) => {
 
             try{
             //Prompting technician for reason for visit. 
-            const response = "What is the reason for the visit? \nUse the format below. \nReason: patient is having blurry vision"
+            const response = "What is the reason for the visit? \nUse the format of example below. \nReason: patient is having blurry vision"
 
             // Post a reply back to the channel
             const reply = {
@@ -72,12 +90,12 @@ app.post('/slack/events', async (req, res) => {
 
             try{
             //Process with AI
-            const response = await responseAI(`Here is the reason for visit for a patient at a eye doctor office. ${message}. What relevent testing do you suggest for the technicians to perform? No explaination. Technicians can do visual acuity, IOP, retinal imaging, and OCT`)
+            const response = await responseAI(`Here is the reason for visit for a patient at a eye doctor office. ${message}. What relevent testing do you suggest for the technicians to perform? No explaination. Technicians can do IOP, retinal imaging, and OCT`)
 
             // Post a reply back to the channel
             const reply = {
                 channel: event.channel,
-                text: response,
+                text: response
             };
             // Make a call to Slack API to send the reply
             postMessage(reply);
