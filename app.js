@@ -47,7 +47,7 @@ app.get('/delete', (req, res) => {
     deleteMessages();
 
 
-        res.send('Server is working!')}
+        res.send('Deleted messages')}
     
     );
     
@@ -85,19 +85,27 @@ app.post('/slack/events', async (req, res) => {
         const user = event.user
 
         if (message.includes("finalize")) {
+
             function extractName(sentence) {
-                const regex = /(\w+),\s(\w+)/;
-                const match = sentence.match(regex);
-                if (match) {
-                  const lastName = match[1];
-                  const firstName = match[2];
-                  return `${lastName}, ${firstName}`;
-                } else {
-                  return null;
-                }
+                const regex = /(\w+),\s(\w+)/g;
+                const matches = [...sentence.matchAll(regex)]
+                const names = matches.map(match => {
+                    const lastName = match[1];
+                    const firstName = match[2];
+                    return `${lastName}, ${firstName}`;
+                  });
+                
+                return names
+                // if (match) {
+                //   const lastName = match[1];
+                //   const firstName = match[2];
+                //   return `${lastName}, ${firstName}`;
+                // } else {
+                //   return null;
+                // }
         }
-        const name = extractName(message)
-        findPatient(name)
+        const names = extractName(message)
+        findPatient(names)
         setTimeout(() => postMessage({
             channel: event.channel,
             text: `✅`,
@@ -106,47 +114,47 @@ app.post('/slack/events', async (req, res) => {
 
 
         //Extracting OV from message. 
-        const isOV = (message) => /(?<!\S)ov(?!\S)/.test(message)
+        // const isOV = (message) => /(?<!\S)ov(?!\S)/.test(message)
       
-         if (isOV(message) && user!==process.env.SLACK_BOT_ID ) {
+        //  if (isOV(message) && user!==process.env.SLACK_BOT_ID ) {
 
-            try{
-            //Prompting technician for reason for visit. 
-            const response = "What is the reason for the visit? \nUse the format of example below. \nReason: patient is having blurry vision"
+        //     try{
+        //     //Prompting technician for reason for visit. 
+        //     const response = "What is the reason for the visit? \nUse the format of example below. \nReason: patient is having blurry vision"
 
-            // Post a reply back to the channel
-            const reply = {
-                channel: event.channel,
-                text: response,
-            };
-            // Make a call to Slack API to send the reply
-            postMessage(reply);
-        }
-            catch (error){
-                console.error("Error sending response",error)
-            }
+        //     // Post a reply back to the channel
+        //     const reply = {
+        //         channel: event.channel,
+        //         text: response,
+        //     };
+        //     // Make a call to Slack API to send the reply
+        //     postMessage(reply);
+        // }
+        //     catch (error){
+        //         console.error("Error sending response",error)
+        //     }
 
-        }
+        // }
 
-        if (message.includes('reason:') && user!==process.env.SLACK_BOT_ID) {
+        // if (message.includes('reason:') && user!==process.env.SLACK_BOT_ID) {
 
-            try{
-            //Process with AI
-            const response = await responseAI(`Here is the reason for visit for a patient at a eye doctor office. ${message}. What relevent testing do you suggest for the technicians to perform? No explaination. Technicians can do IOP, retinal imaging, and OCT`)
+        //     try{
+        //     //Process with AI
+        //     const response = await responseAI(`Here is the reason for visit for a patient at a eye doctor office. ${message}. What relevent testing do you suggest for the technicians to perform? No explaination. Technicians can do IOP, retinal imaging, and OCT`)
 
-            // Post a reply back to the channel
-            const reply = {
-                channel: event.channel,
-                text: response
-            };
-            // Make a call to Slack API to send the reply
-            postMessage(reply);
-        }
-            catch (error){
-                console.error("Error sending AI response",error)
-            }
+        //     // Post a reply back to the channel
+        //     const reply = {
+        //         channel: event.channel,
+        //         text: response
+        //     };
+        //     // Make a call to Slack API to send the reply
+        //     postMessage(reply);
+        // }
+        //     catch (error){
+        //         console.error("Error sending AI response",error)
+        //     }
 
-        }
+        // }
         
     }
     res.sendStatus(200);
