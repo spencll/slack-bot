@@ -14,6 +14,44 @@ app.use(bodyParser.json());
 app.get('/test', (req, res) => { 
     res.send('Server is working!')});
 
+app.get('/delete', (req, res) => { 
+    const userWeb = new WebClient(process.env.SLACK_USER_OAUTH)
+    const botWeb = new WebClient(process.env.SLACK_BOT_OAUTH);
+    async function deleteMessages() {
+        try {
+            // Fetch the conversation history
+            const result = await userWeb.conversations.history({
+                channel: process.env.SLACK_TEST_CHANNEL_ID,
+                limit: 10, // Adjust the limit as needed
+            });
+    
+            // Iterate through the messages and delete them
+            for (const message of result.messages) {
+                if (message.user || message.bot_id) { // Check if the message was posted by a user or bot
+                    // Use the appropriate token to delete the message
+                    const webClient = message.bot_id ? botWeb : userWeb;
+                    await webClient.chat.delete({
+                        channel: process.env.SLACK_TEST_CHANNEL_ID,
+                        ts: message.ts,
+                    });
+                    console.log(`Deleted message with timestamp: ${message.ts}`);
+                }
+            }
+    
+            console.log('All messages deleted.');
+        } catch (error) {
+            console.error(`Error deleting messages: ${error}`);
+        }
+    }
+    
+    deleteMessages();
+
+
+        res.send('Server is working!')}
+    
+    );
+    
+
 async function responseAI(prompt) {
 
     // Initialize Google Generative AI client
@@ -60,6 +98,10 @@ app.post('/slack/events', async (req, res) => {
         }
         const name = extractName(message)
         findPatient(name)
+        setTimeout(() => postMessage({
+            channel: event.channel,
+            text: `✅`,
+        }), 25000);
     }
 
 

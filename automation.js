@@ -12,15 +12,18 @@ async function findPatient(name) {
     await page.locator('[data-test-id="loginBtn"]').click();
     await page.locator('[data-test-id="headerParentNavigateButtonpatients"]').click();
     await page.locator('#patient-panel').getByRole('textbox').click();
-    await page.locator('#patient-panel').getByRole('textbox').fill('testing, anne');
+    await page.locator('#patient-panel').getByRole('textbox').fill(`${name}`);
     await page.locator('[data-test-id="simpleSearchSearch"]').click();
-    await page.locator('[data-test-id="patientSearchResultsTable"]').getByText('Testing, Anne').click();
+    await page.locator('[data-test-id="patientSearchResultsTable"]').getByText(`${name}`).click();
     await page.locator('[data-test-id="rxMenu"]').click();
     await page.getByRole('tab', { name: 'Contact Lens' }).locator('div').first().click();
     await page.locator('[data-test-id="patientPrescriptionsScreenAddButton"]').click();
     await page.getByRole('menuitem', { name: 'Add Contact Lens Rx' }).click();
-    // Works up to this point
     await page.locator('[data-test-id="viewHistoryButton"]').click();
+    await page.locator('[data-test-id="opticalHistoryModal"] [data-test-id="\\32 "]').click();
+    await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).first().click();
+    await page.locator('[data-test-id="saveAuthButton"]').click();
+
     // await page.getByRole('gridcell', { name: '/27/2025' }).nth(2).click();
     // await page.locator('[data-test-id="saveAuthButton"]').click();
     
