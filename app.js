@@ -7,8 +7,22 @@ const ngrok = require('@ngrok/ngrok');
 const app = express();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { WebClient } = require('@slack/web-api');
+const { exec } = require('child_process');
 const findPatient = require('./automation.js')
 
+const killNgrokSessions = () => {
+    exec('ngrok kill', (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error killing ngrok sessions: ${error.message}`);
+        return;
+      }
+      if (stderr) {
+        console.error(`stderr: ${stderr}`);
+        return;
+      }
+      console.log(`stdout: ${stdout}`);
+    });
+}
 app.use(bodyParser.json());
 
 app.get('/test', (req, res) => { 
@@ -203,13 +217,13 @@ async function postMessage(message) {
 
 
 
-
-
 // Create webserver
 http.createServer(app).listen(8080, () => console.log('Node.js web server at 8080 is running...'));
 
 // Get your endpoint online
-ngrok.connect({ addr: 8080, authtoken: process.env.NGROK_AUTHTOKEN, domain: process.env.NGROK_DOMAIN})
-	.then(listener => console.log(`Ingress established at: ${listener.url()}` ));
+// ngrok.connect({ addr: 8080, authtoken: process.env.NGROK_AUTHTOKEN, domain: process.env.NGROK_DOMAIN})
+// 	.then(listener => console.log(`Ingress established at: ${listener.url()}` ));
+
+
 
     

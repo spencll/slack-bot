@@ -48,6 +48,5 @@ async function findPatient(names) {
 
 
     // Add any additional actions here
-    await browser.close();
 }
 module.exports = findPatient
