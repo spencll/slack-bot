@@ -5,7 +5,7 @@ async function clickWithTimeout(page, selector, timeout) {
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Operation timed out')), timeout)
     );
-    const actionPromise = page.locator(selector).click();
+    const actionPromise = page.locator(selector).first().click();
     return Promise.race([actionPromise, timeoutPromise]);
   }
 
@@ -48,6 +48,6 @@ async function findPatient(names) {
 
 
     // Add any additional actions here
-    // await browser.close();
+    await browser.close();
 }
 module.exports = findPatient
