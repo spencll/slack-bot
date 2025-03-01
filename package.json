@@ -4,7 +4,9 @@
   "main": "index.js",
   "scripts": {
     "test": "node automation.js",
-    "dev": "node app.js"
+    "dev": "node app.js",
+    "postinstall": "playwright install --with-deps"
+    
   },
   "keywords": [],
   "author": "",
