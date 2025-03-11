@@ -98,7 +98,7 @@ app.post('/slack/events', async (req, res) => {
         const message = event.text.toLowerCase();
         const user = event.user
 
-        if (message.includes("finalize")) {
+        if (message.includes("final")) {
 
             function extractName(sentence) {
                 const regex = /(\w+),\s(\w+)/g;
@@ -119,11 +119,26 @@ app.post('/slack/events', async (req, res) => {
                 // }
         }
         const names = extractName(message)
-        findPatient(names)
-        setTimeout(() => postMessage({
-            channel: event.channel,
-            text: `✅`,
-        }), 25000);
+        function debounce(func, delay) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    func(...args);
+                }, delay);
+            };
+        }
+        
+        const debouncedFindPatient = debounce(async (names) => {
+            await findPatient(names);
+            postMessage({
+                channel: event.channel,
+                text: `✅`,
+            });
+        }, 300);
+        
+        debouncedFindPatient(names);
+        
     }
 
 
@@ -212,17 +227,16 @@ async function postMessage(message) {
 // }
 
 
+const PORT = process.env.PORT || 8080;
+http.createServer(app).listen(PORT, () => {
+  console.log(`Node.js web server running on port ${PORT}...`);
+});
 
-
-
-
-
-// Create webserver
-http.createServer(app).listen(8080, () => console.log('Node.js web server at 8080 is running...'));
 
 // Get your endpoint online
 // ngrok.connect({ addr: 8080, authtoken: process.env.NGROK_AUTHTOKEN, domain: process.env.NGROK_DOMAIN})
 // 	.then(listener => console.log(`Ingress established at: ${listener.url()}` ));
+
 
 
 

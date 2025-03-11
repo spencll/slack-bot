@@ -10,8 +10,11 @@ async function clickWithTimeout(page, selector, timeout) {
   }
 
 async function findPatient(names) {
-    const browser = await chromium.launch({ headless: false });
-    const page = await browser.newPage();
+    const browser = await chromium.launch({ headless: true});
+    const context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    });
+    const page = await context.newPage();
     await page.goto('https://revolutionehr.com/static/#/');
     await page.locator('[data-test-id="loginUsername"]').click();
     await page.locator('[data-test-id="loginUsername"]').fill(process.env.REV_USERNAME);
@@ -44,10 +47,11 @@ async function findPatient(names) {
 
     // await page.getByRole('gridcell', { name: '/27/2025' }).nth(2).click();
     // await page.locator('[data-test-id="saveAuthButton"]').click();
-    
+    await page.waitForTimeout(2000);
 
 
     // Add any additional actions here
     await browser.close();
+    
 }
 module.exports = findPatient
