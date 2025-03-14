@@ -23,6 +23,7 @@ const killNgrokSessions = () => {
       console.log(`stdout: ${stdout}`);
     });
 }
+
 app.use(bodyParser.json());
 
 app.get('/test', (req, res) => { 
@@ -128,13 +129,22 @@ app.post('/slack/events', async (req, res) => {
                 }, delay);
             };
         }
-        
+
+        let hasPostedError = false;
         const debouncedFindPatient = debounce(async (names) => {
-            await findPatient(names);
-            postMessage({
+            const error = await findPatient(names);
+            if (error) {
+                postMessage({
                 channel: event.channel,
-                text: `✅`,
-            });
+                text: `${error}`,
+            });}
+            // Only post the error message once
+            else {   
+                postMessage({
+                    channel: event.channel,
+                    text: `✅`,
+                });
+            }
         }, 300);
         
         debouncedFindPatient(names);

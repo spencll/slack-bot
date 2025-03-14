@@ -10,11 +10,14 @@ async function clickWithTimeout(page, selector, timeout) {
   }
 
 async function findPatient(names) {
-    const browser = await chromium.launch({ headless: true});
-    const context = await browser.newContext({
+  let browser, context, page;
+  let found = false
+  try{
+    browser = await chromium.launch({ headless: true});
+    context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     });
-    const page = await context.newPage();
+    page = await context.newPage();
     await page.goto('https://revolutionehr.com/static/#/');
     await page.locator('[data-test-id="loginUsername"]').click();
     await page.locator('[data-test-id="loginUsername"]').fill(process.env.REV_USERNAME);
@@ -29,13 +32,17 @@ async function findPatient(names) {
             await page.locator('#patient-panel').getByRole('textbox').fill(name);
             await page.locator('[data-test-id="simpleSearchSearch"]').click();
             // Below is what I want to timeout quickly
-            await clickWithTimeout(page, `[data-test-id="patientSearchResultsTable"] >> text=${name}`, 1000);
+            await clickWithTimeout(page, `[data-test-id="patientSearchResultsTable"] >> text=${name}`, 5000);
           console.log(`Clicked on ${name}`);
+          found = true
           break; // Exit the loop once a name is found and clicked
         } catch (error) {
           console.log(`${name} not found, trying next name...`);
         }
     }
+    if (!found) return new Error("Patient not found.")
+    
+    // Finalizing CL
     await page.locator('[data-test-id="rxMenu"]').click();
     await page.getByRole('tab', { name: 'Contact Lens' }).locator('div').first().click();
     await page.locator('[data-test-id="patientPrescriptionsScreenAddButton"]').click();
@@ -44,14 +51,19 @@ async function findPatient(names) {
     await page.locator('[data-test-id="opticalHistoryModal"] [data-test-id="\\32 "]').click();
     await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).first().click();
     await page.locator('[data-test-id="saveAuthButton"]').click();
-
-    // await page.getByRole('gridcell', { name: '/27/2025' }).nth(2).click();
-    // await page.locator('[data-test-id="saveAuthButton"]').click();
     await page.waitForTimeout(2000);
-
+  }
+  catch (error){
+    console.log(error)
+    return error
+  }
+  finally {
 
     // Add any additional actions here
+    await page.close();
+    await context.close();
     await browser.close();
-    
+  }
+  
 }
 module.exports = findPatient
