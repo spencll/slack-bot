@@ -9,7 +9,7 @@ async function clickWithTimeout(page, selector, timeout) {
     return Promise.race([actionPromise, timeoutPromise]);
   }
 
-async function findPatient(names) {
+async function findPatient(id) {
   let browser, context, page;
   let found = false
   try{
@@ -19,6 +19,7 @@ async function findPatient(names) {
     });
     page = await context.newPage();
     await page.goto('https://revolutionehr.com/static/#/');
+    console.log("Rev opened")
     await page.locator('[data-test-id="loginUsername"]').click();
     await page.locator('[data-test-id="loginUsername"]').fill(process.env.REV_USERNAME);
     await page.locator('[data-test-id="loginUsername"]').press('Tab');
@@ -26,20 +27,19 @@ async function findPatient(names) {
     await page.locator('[data-test-id="loginBtn"]').click();
     await page.locator('[data-test-id="headerParentNavigateButtonpatients"]').click();
     // Attempt patient input 
-    for (const name of names) {
+   
         try {
             await page.locator('#patient-panel').getByRole('textbox').click();
-            await page.locator('#patient-panel').getByRole('textbox').fill(name);
+            await page.locator('#patient-panel').getByRole('textbox').fill(`#${id}`);
             await page.locator('[data-test-id="simpleSearchSearch"]').click();
             // Below is what I want to timeout quickly
-            await clickWithTimeout(page, `[data-test-id="patientSearchResultsTable"] >> text=${name}`, 5000);
-          console.log(`Clicked on ${name}`);
+            await clickWithTimeout(page, `[data-test-id="patientSearchResultsTable"] >> text=${id}`, 5000);
+          console.log(`Clicked on ${id}`);
           found = true
-          break; // Exit the loop once a name is found and clicked
         } catch (error) {
-          console.log(`${name} not found, trying next name...`);
+          console.log(`${id} not found`);
         }
-    }
+    
     if (!found) return new Error("Patient not found.")
     
     // Finalizing CL

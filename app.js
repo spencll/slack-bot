@@ -101,25 +101,24 @@ app.post('/slack/events', async (req, res) => {
 
         if (message.includes("final")) {
 
-            function extractName(sentence) {
-                const regex = /(\w+),\s(\w+)/g;
-                const matches = [...sentence.matchAll(regex)]
-                const names = matches.map(match => {
-                    const lastName = match[1];
-                    const firstName = match[2];
-                    return `${lastName}, ${firstName}`;
-                  });
+        //     function extractName(sentence) {
+        //         const regex = /(\w+),\s(\w+)/g;
+        //         const matches = [...sentence.matchAll(regex)]
+        //         const names = matches.map(match => {
+        //             const lastName = match[1];
+        //             const firstName = match[2];
+        //             return `${lastName}, ${firstName}`;
+        //           });
                 
-                return names
-                // if (match) {
-                //   const lastName = match[1];
-                //   const firstName = match[2];
-                //   return `${lastName}, ${firstName}`;
-                // } else {
-                //   return null;
-                // }
-        }
-        const names = extractName(message)
+        //         return names
+        // }
+        function extractID(sentence) {
+            const match = sentence.match(/#(\d+)/); // Regex to find # followed by digits and capture the digits
+            return match ? match[1] : null; // Return only the captured digits
+          }
+
+        const id = extractID(message)
+
         function debounce(func, delay) {
             let timer;
             return (...args) => {
@@ -130,9 +129,8 @@ app.post('/slack/events', async (req, res) => {
             };
         }
 
-        let hasPostedError = false;
-        const debouncedFindPatient = debounce(async (names) => {
-            const error = await findPatient(names);
+        const debouncedFindPatient = debounce(async (id) => {
+            const error = await findPatient(id);
             if (error) {
                 postMessage({
                 channel: event.channel,
@@ -147,7 +145,7 @@ app.post('/slack/events', async (req, res) => {
             }
         }, 300);
         
-        debouncedFindPatient(names);
+        debouncedFindPatient(id);
         
     }
 
