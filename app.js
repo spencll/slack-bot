@@ -98,8 +98,16 @@ app.post('/slack/events', async (req, res) => {
     if (event && event.type === 'message' && event.text) {
         const message = event.text.toLowerCase();
         const user = event.user
+        if (message.includes("final") && !message.includes("#")) {
+            postMessage({
+            channel: event.channel,
+            text: `Please use patient ID #XXXXXXXX instead of name.`,
+        });
+    }
 
-        if (message.includes("final")) {
+
+
+        if (message.includes("final") && message.includes("#")) {
 
         //     function extractName(sentence) {
         //         const regex = /(\w+),\s(\w+)/g;
