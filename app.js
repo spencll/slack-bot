@@ -98,16 +98,16 @@ app.post('/slack/events', async (req, res) => {
     if (event && event.type === 'message' && event.text) {
         const message = event.text.toLowerCase();
         const user = event.user
-        if (message.includes("final") && !message.includes("#")) {
+        if (!message.includes("call") && message.includes("final") && !message.includes("#") ) {
             postMessage({
             channel: event.channel,
-            text: `Please use patient ID #XXXXXXXX instead of name.`,
+            text: `Please resend request using patient ID #XXXXXXXX instead of name.`,
         });
     }
 
 
 
-        if (message.includes("final") && message.includes("#")) {
+        if (!message.includes("call") && message.includes("final") && message.includes("#")) {
 
         //     function extractName(sentence) {
         //         const regex = /(\w+),\s(\w+)/g;
@@ -136,7 +136,7 @@ app.post('/slack/events', async (req, res) => {
                 }, delay);
             };
         }
-
+        // Prevents multiple calls. 
         const debouncedFindPatient = debounce(async (id) => {
             const error = await findPatient(id);
             if (error) {
@@ -250,8 +250,8 @@ http.createServer(app).listen(PORT, () => {
 
 
 // Get your endpoint online
-// ngrok.connect({ addr: 8080, authtoken: process.env.NGROK_AUTHTOKEN, domain: process.env.NGROK_DOMAIN})
-// 	.then(listener => console.log(`Ingress established at: ${listener.url()}` ));
+ngrok.connect({ addr: 8080, authtoken: process.env.NGROK_AUTHTOKEN, domain: process.env.NGROK_DOMAIN})
+	.then(listener => console.log(`Ingress established at: ${listener.url()}` ));
 
 
 
