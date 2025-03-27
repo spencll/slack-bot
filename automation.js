@@ -9,7 +9,7 @@ async function clickWithTimeout(page, selector, timeout) {
     return Promise.race([actionPromise, timeoutPromise]);
   }
 
-async function findPatient(id) {
+async function findPatient(id, cl) {
   let browser, context, page;
   let found = false
   try{
@@ -42,16 +42,28 @@ async function findPatient(id) {
     
     if (!found) return new Error("Patient not found.")
     
-    // Finalizing CL
+    // Get to trials
     await page.locator('[data-test-id="rxMenu"]').click();
-    await page.getByRole('tab', { name: 'Contact Lens' }).locator('div').first().click();
     await page.locator('[data-test-id="patientPrescriptionsScreenAddButton"]').click();
     await page.getByRole('menuitem', { name: 'Add Contact Lens Rx' }).click();
     await page.locator('[data-test-id="viewHistoryButton"]').click();
-    await page.locator('[data-test-id="opticalHistoryModal"] [data-test-id="\\32 "]').click();
-    await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).first().click();
+    await page.locator('[data-test-id="\\32 "]').click();
+
+    if (cl) {
+      // Attempt to click the second option based on the specified brand
+      const brand= page.getByText(cl).first();
+      await brand.waitFor({ state: 'visible' });
+      if (await brand.isVisible()) await brand.click();
+      else return new Error("Brand not found.")
+      
+  } else {
+      // Default
+      await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).first().click();
+  }
+  
     await page.locator('[data-test-id="saveAuthButton"]').click();
     await page.waitForTimeout(2000);
+
   }
   catch (error){
     console.log(error)

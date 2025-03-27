@@ -97,35 +97,40 @@ app.post('/slack/events', async (req, res) => {
     // Handle message events
     if (event && event.type === 'message' && event.text) {
         const message = event.text.toLowerCase();
-        const user = event.user
-        if (!message.includes("call") && message.includes("final") && !message.includes("#") ) {
-            postMessage({
-            channel: event.channel,
-            text: `Please resend request using patient ID #XXXXXXXX instead of name.`,
-        });
-    }
 
+    // Old error response. Don't need if my requests require # to run.
+    //     if (!message.includes("call") && message.includes("final") && !message.includes("#") ) {
+    //         postMessage({
+    //         channel: event.channel,
+    //         text: `Please resend request using patient ID #XXXXXXXX instead of name.`,
+    //     });
+    // }
 
+        // # does the request.
+        if (message.includes("final") && message.includes("#")) {
 
-        if (!message.includes("call") && message.includes("final") && message.includes("#")) {
-
-        //     function extractName(sentence) {
-        //         const regex = /(\w+),\s(\w+)/g;
-        //         const matches = [...sentence.matchAll(regex)]
-        //         const names = matches.map(match => {
-        //             const lastName = match[1];
-        //             const firstName = match[2];
-        //             return `${lastName}, ${firstName}`;
-        //           });
-                
-        //         return names
-        // }
-        function extractID(sentence) {
-            const match = sentence.match(/#(\d+)/); // Regex to find # followed by digits and capture the digits
-            return match ? match[1] : null; // Return only the captured digits
-          }
-
-        const id = extractID(message)
+            // Extract ID
+            function extractID(sentence) {
+                const match = sentence.match(/#(\d+)/); // Regex to find # followed by digits and capture the digits
+                return match ? match[1] : null; // Return only the captured digits
+              }
+    
+            // Extract pack amount
+            function changePK(sentence){
+                const regex = /\s(12|24|30|90)/; 
+                return regex.test(sentence) ? true : false;
+            }  
+            // Extract CL brand
+            function extractCL(sentence){
+                const brands = {"moist": "Moist", "biweekly": "2", "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailes", "oasys": "Oasys"}
+                for (const key in brands) {
+                    if (sentence.includes(key)) return brands[key]; 
+                }
+                return null
+            }
+            
+            const id = extractID(message)
+            const cl = extractCL(message)
 
         function debounce(func, delay) {
             let timer;
@@ -137,8 +142,8 @@ app.post('/slack/events', async (req, res) => {
             };
         }
         // Prevents multiple calls. 
-        const debouncedFindPatient = debounce(async (id) => {
-            const error = await findPatient(id);
+        const debouncedFindPatient = debounce(async (id, cl) => {
+            const error = await findPatient(id, cl);
             if (error) {
                 postMessage({
                 channel: event.channel,
@@ -153,7 +158,7 @@ app.post('/slack/events', async (req, res) => {
             }
         }, 300);
         
-        debouncedFindPatient(id);
+        debouncedFindPatient(id, cl);
         
     }
 
@@ -215,34 +220,6 @@ async function postMessage(message) {
     });
 }
 
-
-// Use the user OAuth token
-// const token = process.env.SLACK_USER_OAUTH;
-// const web = new WebClient(token);
-
-// async function fetchOutgoingDMs(userId) {
-//     try {
-//         // Get the list of direct message conversations for the user
-//         const result = await web.users.conversations({ user: userId, types: 'im' });
-//         const dmIds = result.channels.map(channel => channel.id);
-
-//         for (const dmId of dmIds) {
-//             // Fetch the conversation history for each DM
-//             const history = await web.conversations.history({ channel: dmId });
-//             // Filter messages sent by the specified user
-//             const userMessages = history.messages.filter(message => message.user === userId);
-            
-//             // Log the user messages
-//             userMessages.forEach(message => {
-//                 console.log(`${message.user}: ${message.text}`);
-//             });
-//         }
-//     } catch (error) {
-//         console.error(error);
-//     }
-// }
-
-
 const PORT = process.env.PORT || 8080;
 http.createServer(app).listen(PORT, () => {
   console.log(`Node.js web server running on port ${PORT}...`);
@@ -250,8 +227,8 @@ http.createServer(app).listen(PORT, () => {
 
 
 // Get your endpoint online
-ngrok.connect({ addr: 8080, authtoken: process.env.NGROK_AUTHTOKEN, domain: process.env.NGROK_DOMAIN})
-	.then(listener => console.log(`Ingress established at: ${listener.url()}` ));
+// ngrok.connect({ addr: 8080, authtoken: process.env.NGROK_AUTHTOKEN, domain: process.env.NGROK_DOMAIN})
+// 	.then(listener => console.log(`Ingress established at: ${listener.url()}` ));
 
 
 
