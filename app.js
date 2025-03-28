@@ -114,15 +114,15 @@ app.post('/slack/events', async (req, res) => {
                 const match = sentence.match(/#(\d+)/); // Regex to find # followed by digits and capture the digits
                 return match ? match[1] : null; // Return only the captured digits
               }
-    
+            
             // Extract pack amount
             function changePK(sentence){
                 const regex = /\s(12|24|30|90)/; 
                 return regex.test(sentence) ? true : false;
             }  
-            // Extract CL brand
+            // Extract CL brand. Specific to broad. 
             function extractCL(sentence){
-                const brands = {"moist": "Moist", "biweekly": "2", "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailes", "oasys": "Oasys"}
+                const brands = {"moist": "Moist", "biweek": "Hydraclear", "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailes", "oasys": "Oasys 1","total":"Total"}
                 for (const key in brands) {
                     if (sentence.includes(key)) return brands[key]; 
                 }
