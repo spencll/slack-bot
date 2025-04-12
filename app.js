@@ -58,17 +58,12 @@ app.get('/delete', (req, res) => {
             console.error(`Error deleting messages: ${error}`);
         }
     }
-    
     deleteMessages();
-
-
-        res.send('Deleted messages')}
-    
+    res.send('Deleted messages')}
     );
     
 
 async function responseAI(prompt) {
-
     // Initialize Google Generative AI client
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     
@@ -90,23 +85,13 @@ async function responseAI(prompt) {
 app.post('/slack/events', async (req, res) => {
     const { challenge, event } = req.body;    
     // Respond to Slack's URL verification challenge
-    if (challenge) {
-        res.send( challenge );
-    }
+    if (challenge) res.send( challenge );
     
     // Handle message events
     if (event && event.type === 'message' && event.text) {
         const message = event.text.toLowerCase();
 
-    // Old error response. Don't need if my requests require # to run.
-    //     if (!message.includes("call") && message.includes("final") && !message.includes("#") ) {
-    //         postMessage({
-    //         channel: event.channel,
-    //         text: `Please resend request using patient ID #XXXXXXXX instead of name.`,
-    //     });
-    // }
-
-        // # does the request.
+        // final + # does the request.
         if (message.includes("final") && message.includes("#")) {
 
             // Extract ID
@@ -115,20 +100,26 @@ app.post('/slack/events', async (req, res) => {
                 return match ? match[1] : null; // Return only the captured digits
               }
             
-            // Extract pack amount
+            // Extract pack amount (WIP)
             function changePK(sentence){
                 const regex = /\s(12|24|30|90)/; 
                 return regex.test(sentence) ? true : false;
             }  
             // Extract CL brand. Specific to broad. 
             function extractCL(sentence){
-                const brands = {"moist": "Moist", "biweek": "Hydraclear", "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailes", "oasys": "Oasys 1","total":"Total"}
+                const brands = {"moist": "Moist", "biweek": "Hydraclear", "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailes", "oasys": "Oasys","total":"Total"}
                 for (const key in brands) {
                     if (sentence.includes(key)) return brands[key]; 
                 }
                 return null
             }
             
+            function extractPower(sentence){
+                const match = sentence.match(/-?\d+\.\d+/)
+                return match ? match[0] : null
+            }
+
+            const power = extractPower(message)
             const id = extractID(message)
             const cl = extractCL(message)
 
@@ -142,8 +133,8 @@ app.post('/slack/events', async (req, res) => {
             };
         }
         // Prevents multiple calls. 
-        const debouncedFindPatient = debounce(async (id, cl) => {
-            const error = await findPatient(id, cl);
+        const debouncedFindPatient = debounce(async (id, cl, power) => {
+            const error = await findPatient(id, cl, power);
             if (error) {
                 postMessage({
                 channel: event.channel,
@@ -158,11 +149,8 @@ app.post('/slack/events', async (req, res) => {
             }
         }, 300);
         
-        debouncedFindPatient(id, cl);
-        
+        debouncedFindPatient(id, cl, power);
     }
-
-
         //Extracting OV from message. 
         // const isOV = (message) => /(?<!\S)ov(?!\S)/.test(message)
       
@@ -225,10 +213,9 @@ http.createServer(app).listen(PORT, () => {
   console.log(`Node.js web server running on port ${PORT}...`);
 });
 
-
 // Get your endpoint online
-// ngrok.connect({ addr: 8080, authtoken: process.env.NGROK_AUTHTOKEN, domain: process.env.NGROK_DOMAIN})
-// 	.then(listener => console.log(`Ingress established at: ${listener.url()}` ));
+ngrok.connect({ addr: 8080, authtoken: process.env.NGROK_AUTHTOKEN, domain: process.env.NGROK_DOMAIN})
+	.then(listener => console.log(`Ingress established at: ${listener.url()}` ));
 
 
 

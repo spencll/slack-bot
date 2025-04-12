@@ -9,13 +9,13 @@ async function clickWithTimeout(page, selector, timeout) {
     return Promise.race([actionPromise, timeoutPromise]);
   }
 
-async function findPatient(id, cl) {
+async function findPatient(id, cl, power) {
   let browser, context, page;
   let found = false
   try{
     browser = await chromium.launch({ headless: true, args: ['--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage']});
     context = await browser.newContext({
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      userAgent: process.env.USER_AGENT
     });
     page = await context.newPage();
     await page.goto('https://revolutionehr.com/static/#/');
@@ -48,30 +48,61 @@ async function findPatient(id, cl) {
     await page.getByRole('menuitem', { name: 'Add Contact Lens Rx' }).click();
     await page.locator('[data-test-id="viewHistoryButton"]').click();
     await page.locator('[data-test-id="\\32 "]').click();
-
-    if (cl) {
-      // Attempt to click the second option based on the specified brand
-      const brand= page.getByText(cl).first();
-      await brand.waitFor({ state: 'visible' });
-      if (await brand.isVisible()) await brand.click();
-      else return new Error("Brand not found.")
-      
-  } else {
-      // Default
-      await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).first().click();
+    await page.locator(':text("1 of")').waitFor()
+    
+    // Specific trial checker 
+    if (cl || power){
+    const rows = page.locator('div[role="row"]')
+    const count = await rows.count();
+    let found = false
+    for (let i = 0; i < count; i++) {
+      const row = rows.nth(i);
+      const html = await row.innerHTML();
+      if (cl && power) {
+        if (html.includes(cl) && html.includes(power)){
+          console.log(`Trial with brand ${cl} and power ${power} found`)
+          found = true
+          await row.click()
+          break
+        }
+      }
+      else if (cl) {
+        if (html.includes(cl)) {
+          console.log(`Trial with brand ${cl} found`)
+          found = true
+          await row.click()
+          break
+        }
+      }
   }
+  if (!found) throw new Error("Specified trial not found")
+}
   
+  //   if (cl) {
+  //     // Attempt to click the brand, no power specified
+  //     if (!power){
+  //     const brand= page.getByText(cl).first();
+  //     await brand.waitFor({ state: 'visible' });
+  //     if (await brand.isVisible()) await brand.click();
+  //     else return new Error("Brand not found.")
+  //     }
+
+  // } 
+  //default first option
+  else await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).first().click(); 
+  
+
+    // Saving
     await page.locator('[data-test-id="saveAuthButton"]').click();
-    await page.waitForTimeout(2000);
+    await page.locator('[data-test-id="saveAuthButton"]').waitFor({ state: 'detached' });
 
   }
+
   catch (error){
     console.log(error)
     return error
   }
   finally {
-
-    // Add any additional actions here
     await page.close();
     await context.close();
     await browser.close();
