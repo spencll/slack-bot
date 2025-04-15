@@ -107,7 +107,7 @@ app.post('/slack/events', async (req, res) => {
             }  
             // Extract CL brand. Specific to broad. 
             function extractCL(sentence){
-                const brands = {"moist": "Moist", "biweek": "Hydraclear", "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailes", "oasys": "Oasys","total":"Total"}
+                const brands = {"moist": "Moist", "oasys 1": "Oasys 1", "week": "Hydraclear", "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailes", "oasys": "Oasys","total":"Total", "bio": "Bio"}
                 for (const key in brands) {
                     if (sentence.includes(key)) return brands[key]; 
                 }

@@ -11,7 +11,8 @@ async function clickWithTimeout(page, selector, timeout) {
 
 async function findPatient(id, cl, power) {
   let browser, context, page;
-  let found = false
+  let found = false //Flag for if info is found
+
   try{
     browser = await chromium.launch({ headless: true, args: ['--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage']});
     context = await browser.newContext({
@@ -47,17 +48,18 @@ async function findPatient(id, cl, power) {
     await page.locator('[data-test-id="patientPrescriptionsScreenAddButton"]').click();
     await page.getByRole('menuitem', { name: 'Add Contact Lens Rx' }).click();
     await page.locator('[data-test-id="viewHistoryButton"]').click();
+    await page.locator('[data-test-id="\\31 "]').click()
     await page.locator('[data-test-id="\\32 "]').click();
-    await page.locator(':text("1 of")').waitFor()
+    await page.locator(':text("CL Trial")').first().waitFor({ state: 'visible' });
     
     // Specific trial checker 
     if (cl || power){
     const rows = page.locator('div[role="row"]')
     const count = await rows.count();
-    let found = false
+    found = false //Reset flag
     for (let i = 0; i < count; i++) {
       const row = rows.nth(i);
-      const html = await row.innerHTML();
+      const html = await row.innerText();
       if (cl && power) {
         if (html.includes(cl) && html.includes(power)){
           console.log(`Trial with brand ${cl} and power ${power} found`)
@@ -78,20 +80,9 @@ async function findPatient(id, cl, power) {
   if (!found) throw new Error("Specified trial not found")
 }
   
-  //   if (cl) {
-  //     // Attempt to click the brand, no power specified
-  //     if (!power){
-  //     const brand= page.getByText(cl).first();
-  //     await brand.waitFor({ state: 'visible' });
-  //     if (await brand.isVisible()) await brand.click();
-  //     else return new Error("Brand not found.")
-  //     }
-
-  // } 
   //default first option
   else await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).first().click(); 
   
-
     // Saving
     await page.locator('[data-test-id="saveAuthButton"]').click();
     await page.locator('[data-test-id="saveAuthButton"]').waitFor({ state: 'detached' });
