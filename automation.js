@@ -12,7 +12,7 @@ async function clickWithTimeout(page, selector, timeout) {
 async function findPatient(id, cl, power) {
   let browser, context, page;
   let found = false //Flag for if info is found
-
+  
   try{
     browser = await chromium.launch({ headless: true, args: ['--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage']});
     context = await browser.newContext({
@@ -42,7 +42,12 @@ async function findPatient(id, cl, power) {
         }
     
     if (!found) return new Error("Patient not found.")
-    
+
+    // Handles patients with alerts
+    await page.waitForTimeout(1000)
+    const close = page.locator('[data-test-id="alertHistoryModalCloseButton"]')
+    if (await close.count()>0) await close.click()
+
     // Get to trials
     await page.locator('[data-test-id="rxMenu"]').click();
     await page.locator('[data-test-id="patientPrescriptionsScreenAddButton"]').click();
@@ -51,7 +56,7 @@ async function findPatient(id, cl, power) {
     await page.locator('[data-test-id="\\31 "]').click()
     await page.locator('[data-test-id="\\32 "]').click();
     await page.locator(':text("CL Trial")').first().waitFor({ state: 'visible' });
-    
+  
     // Specific trial checker 
     if (cl || power){
     const rows = page.locator('div[role="row"]')
@@ -60,17 +65,22 @@ async function findPatient(id, cl, power) {
     for (let i = 0; i < count; i++) {
       const row = rows.nth(i);
       const html = await row.innerText();
+      let matchedBrand = null;
+      // Handles tricky oasys case. 
+      if (Array.isArray(cl)) matchedBrand = cl.find(brand => html.includes(brand));
+      else if (html.includes(cl)) matchedBrand = cl; 
+    
       if (cl && power) {
-        if (html.includes(cl) && html.includes(power)){
-          console.log(`Trial with brand ${cl} and power ${power} found`)
+        if (matchedBrand && html.includes(power)){
+          console.log(`Trial with brand ${matchedBrand} and power ${power} found`)
           found = true
           await row.click()
           break
         }
       }
       else if (cl) {
-        if (html.includes(cl)) {
-          console.log(`Trial with brand ${cl} found`)
+        if (matchedBrand) {
+          console.log(`Trial with brand ${matchedBrand} found`)
           found = true
           await row.click()
           break
@@ -80,13 +90,13 @@ async function findPatient(id, cl, power) {
   if (!found) throw new Error("Specified trial not found")
 }
   
+
   //default first option
-  else await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).first().click(); 
+  else await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).first().click()
   
     // Saving
     await page.locator('[data-test-id="saveAuthButton"]').click();
     await page.locator('[data-test-id="saveAuthButton"]').waitFor({ state: 'detached' });
-
   }
 
   catch (error){

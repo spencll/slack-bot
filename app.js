@@ -61,8 +61,8 @@ app.get('/delete', (req, res) => {
     deleteMessages();
     res.send('Deleted messages')}
     );
-    
 
+    
 async function responseAI(prompt) {
     // Initialize Google Generative AI client
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -90,7 +90,7 @@ app.post('/slack/events', async (req, res) => {
     // Handle message events
     if (event && event.type === 'message' && event.text) {
         const message = event.text.toLowerCase();
-
+   
         // final + # does the request.
         if (message.includes("final") && message.includes("#")) {
 
@@ -107,7 +107,7 @@ app.post('/slack/events', async (req, res) => {
             }  
             // Extract CL brand. Specific to broad. 
             function extractCL(sentence){
-                const brands = {"moist": "Moist", "oasys 1": "Oasys 1", "week": "Hydraclear", "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailes", "oasys": "Oasys","total":"Total", "bio": "Bio"}
+                const brands = {"moist": "Moist", "oasys 1": "Oasys 1", "week": ["Hydraclear","Oasys for"], "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailes", "oasys": "Oasys","total":"Total", "bio": "Bio"}
                 for (const key in brands) {
                     if (sentence.includes(key)) return brands[key]; 
                 }
@@ -132,6 +132,7 @@ app.post('/slack/events', async (req, res) => {
                 }, delay);
             };
         }
+
         // Prevents multiple calls. 
         const debouncedFindPatient = debounce(async (id, cl, power) => {
             const error = await findPatient(id, cl, power);
