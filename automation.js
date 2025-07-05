@@ -9,7 +9,7 @@ async function clickWithTimeout(page, selector, timeout) {
     return Promise.race([actionPromise, timeoutPromise]);
   }
 
-async function findPatient(id, cl, power) {
+async function findPatient(id, nth) {
   let browser, context, page;
   let found = false //Flag for if info is found
   
@@ -58,39 +58,46 @@ async function findPatient(id, cl, power) {
     await page.locator(':text("CL Trial")').first().waitFor({ state: 'visible' });
   
     // Specific trial checker 
-    if (cl || power){
-    const rows = page.locator('div[role="row"]')
-    const count = await rows.count();
-    found = false //Reset flag
-    for (let i = 0; i < count; i++) {
-      const row = rows.nth(i);
-      const html = await row.innerText();
-      let matchedBrand = null;
-      // Handles tricky oasys case. 
-      if (Array.isArray(cl)) matchedBrand = cl.find(brand => html.includes(brand));
-      else if (html.includes(cl)) matchedBrand = cl; 
+//     if (cl || power){
+//     const rows = page.locator('div[role="row"]')
+//     const count = await rows.count();
+//     found = false //Reset flag
+//     for (let i = 0; i < count; i++) {
+//       const row = rows.nth(i);
+//       const html = await row.innerText();
+//       let matchedBrand = null;
+//       // Handles tricky oasys case. 
+//       if (Array.isArray(cl)) matchedBrand = cl.find(brand => html.includes(brand));
+//       else if (html.includes(cl)) matchedBrand = cl; 
     
-      if (cl && power) {
-        if (matchedBrand && html.includes(power)){
-          console.log(`Trial with brand ${matchedBrand} and power ${power} found`)
-          found = true
-          await row.click()
-          break
-        }
-      }
-      else if (cl) {
-        if (matchedBrand) {
-          console.log(`Trial with brand ${matchedBrand} found`)
-          found = true
-          await row.click()
-          break
-        }
-      }
-  }
-  if (!found) throw new Error("Specified trial not found")
-}
-  
-
+//       if (cl && power) {
+//         if (matchedBrand && html.includes(power)){
+//           console.log(`Trial with brand ${matchedBrand} and power ${power} found`)
+//           found = true
+//           await row.click()
+//           break
+//         }
+//       }
+//       else if (power) {
+//          if (html.includes(power)){
+//           console.log(`Trial with power ${power} found`)
+//           found = true
+//           await row.click()
+//           break
+//         }
+//       }
+//       else if (cl) {
+//         if (matchedBrand) {
+//           console.log(`Trial with brand ${matchedBrand} found`)
+//           found = true
+//           await row.click()
+//           break
+//         }
+//       }
+//   }
+//   if (!found) throw new Error("Specified trial not found")
+// }
+  if (nth) await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).nth(nth).click()
   //default first option
   else await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).first().click()
   

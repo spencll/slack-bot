@@ -107,7 +107,7 @@ app.post('/slack/events', async (req, res) => {
             }  
             // Extract CL brand. Specific to broad. 
             function extractCL(sentence){
-                const brands = {"moist": "Moist", "oasys 1": "Oasys 1", "week": ["Hydraclear","Oasys for"], "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailes", "oasys": "Oasys","total":"Total", "bio": "Bio"}
+                const brands = {"moist": "Moist", "oasys 1": "Oasys 1", "week": ["Hydraclear","Oasys for"], "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailies", "oasys": "Oasys","total":"Total", "bio": "Bio"}
                 for (const key in brands) {
                     if (sentence.includes(key)) return brands[key]; 
                 }
@@ -119,9 +119,14 @@ app.post('/slack/events', async (req, res) => {
                 return match ? match[0] : null
             }
 
-            const power = extractPower(message)
+            function extractNth(sentence){
+                const match = sentence.match(/\s\d+/)
+                return match ? Number(match[0])-1 : null
+            }
+            // const cl = extractCL(message)
+            // const power = extractPower(message)
             const id = extractID(message)
-            const cl = extractCL(message)
+            const nth = extractNth(message)
 
         function debounce(func, delay) {
             let timer;
@@ -134,8 +139,8 @@ app.post('/slack/events', async (req, res) => {
         }
 
         // Prevents multiple calls. 
-        const debouncedFindPatient = debounce(async (id, cl, power) => {
-            const error = await findPatient(id, cl, power);
+        const debouncedFindPatient = debounce(async (id, nth) => {
+            const error = await findPatient(id, nth);
             if (error) {
                 postMessage({
                 channel: event.channel,
@@ -150,7 +155,7 @@ app.post('/slack/events', async (req, res) => {
             }
         }, 300);
         
-        debouncedFindPatient(id, cl, power);
+        debouncedFindPatient(id, nth);
     }
         //Extracting OV from message. 
         // const isOV = (message) => /(?<!\S)ov(?!\S)/.test(message)
