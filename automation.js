@@ -14,7 +14,7 @@ async function findPatient(id, nth) {
   let found = false //Flag for if info is found
   
   try{
-    browser = await chromium.launch({ headless: true, args: ['--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage']});
+    browser = await chromium.launch({ headless: false, args: ['--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage']});
     context = await browser.newContext({
       userAgent: process.env.USER_AGENT
     });

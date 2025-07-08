@@ -9,6 +9,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { WebClient } = require('@slack/web-api');
 const { exec } = require('child_process');
 const findPatient = require('./automation.js')
+const autofill =  require('./autofill.js')
 
 const killNgrokSessions = () => {
     exec('ngrok kill', (error, stdout, stderr) => {
@@ -100,31 +101,10 @@ app.post('/slack/events', async (req, res) => {
                 return match ? match[1] : null; // Return only the captured digits
               }
             
-            // Extract pack amount (WIP)
-            function changePK(sentence){
-                const regex = /\s(12|24|30|90)/; 
-                return regex.test(sentence) ? true : false;
-            }  
-            // Extract CL brand. Specific to broad. 
-            function extractCL(sentence){
-                const brands = {"moist": "Moist", "oasys 1": "Oasys 1", "week": ["Hydraclear","Oasys for"], "max": "Max", "infuse": "Infuse", "precision": "Precision", "dailies": "Dailies", "oasys": "Oasys","total":"Total", "bio": "Bio"}
-                for (const key in brands) {
-                    if (sentence.includes(key)) return brands[key]; 
-                }
-                return null
-            }
-            
-            function extractPower(sentence){
-                const match = sentence.match(/-?\d+\.\d+/)
-                return match ? match[0] : null
-            }
-
             function extractNth(sentence){
                 const match = sentence.match(/\s\d+/)
                 return match ? Number(match[0])-1 : null
             }
-            // const cl = extractCL(message)
-            // const power = extractPower(message)
             const id = extractID(message)
             const nth = extractNth(message)
 
@@ -157,6 +137,48 @@ app.post('/slack/events', async (req, res) => {
         
         debouncedFindPatient(id, nth);
     }
+    //autofill
+            if (message.includes("autofill") && message.includes("#")) {
+
+            // Extract ID
+            function extractID(sentence) {
+                const match = sentence.match(/#(\d+)/); // Regex to find # followed by digits and capture the digits
+                return match ? match[1] : null; // Return only the captured digits
+              }
+
+            const id = extractID(message)
+
+        function debounce(func, delay) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    func(...args);
+                }, delay);
+            };
+        }
+
+        // Prevents multiple calls. 
+        const debouncedAutofill = debounce(async (id) => {
+            const error = await autofill(id);
+            if (error) {
+                postMessage({
+                channel: event.channel,
+                text: `${error}`,
+            });}
+            // Only post the error message once
+            else {   
+                postMessage({
+                    channel: event.channel,
+                    text: `✅`,
+                });
+            }
+        }, 300);
+        
+        debouncedAutofill(id);
+    }
+
+
         //Extracting OV from message. 
         // const isOV = (message) => /(?<!\S)ov(?!\S)/.test(message)
       
