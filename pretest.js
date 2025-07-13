@@ -14,19 +14,26 @@ async function autofill(id) {
   let found = false //Flag for if info is found
   
   try{
-    browser = await chromium.launch({ headless: false, args: ['--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage']});
+    browser = await chromium.launch({ headless: true, args: ['--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage']});
     context = await browser.newContext({
       userAgent: process.env.USER_AGENT
     });
     page = await context.newPage();
-    await page.goto('https://revolutionehr.com/static/#/');
-    console.log("Rev opened")
-    await page.locator('[data-test-id="loginUsername"]').click();
-    await page.locator('[data-test-id="loginUsername"]').fill(process.env.REV_USERNAME);
-    await page.locator('[data-test-id="loginUsername"]').press('Tab');
-    await page.locator('[data-test-id="loginPassword"]').fill(process.env.REV_PASSWORD);
-    await page.locator('[data-test-id="loginBtn"]').click();
-    await page.locator('[data-test-id="headerParentNavigateButtonpatients"]').click();
+    await page.goto('https://telemedicine.luxottica.com/login');
+    console.log("Pretest opened")
+    await page.getByRole('checkbox', { name: 'are you in store?' }).check();
+    await page.getByTestId('sign-in-login-page').click();
+    await page.getByRole('textbox', { name: 'Username:' }).fill('SLD2156');
+    await page.getByRole('textbox', { name: 'Password:' }).fill('>09u&&InH#10');
+    await page.getByRole('button', { name: 'Login' }).click();
+    await page.goto('https://telemedicine.luxottica.com/room-device');
+    await page.getByTestId('radio-selection-1').locator('span').nth(1).click();
+    await page.getByTestId('device-selection-next-button').click();
+    console.log("logged in")
+
+    //getting to pretest 
+    await page.getByText('Christopher Saponara').click();
+   
 
     // Attempt patient input 
         try {
@@ -52,7 +59,7 @@ async function autofill(id) {
     await page.locator('[data-test-id="documentsImagesMenu"]').click();
     await page.getByRole('gridcell', { name: 'IntakeQ' }).click();
     await page.getByRole('gridcell', { name: 'is template cell column header' }).nth(1).locator('[data-test-id="folderFileListPreviewButton"]').click();
-    await page.waitForTimeout(2000) //Wait for page load
+    await page.waitForTimeout(1000) //Wait for page load
     await page.getByRole('button', { name: 'Next Page' }).click();
     //Parse out patient form
     await page.waitForSelector('#viewer');
@@ -74,25 +81,15 @@ async function autofill(id) {
     const meds= combinedText.match(/Medications and supplements:\s*(.*?)\s*Medication allergies:/i)?.[1]
     const allergies= combinedText.match(/Medication allergies:\s*(.*?)\s*Current Primary/i)?.[1]
     console.log(combinedText)
-    const output= `
-    eyeConditions: ${eyeConditions}
-    eyeHistory: ${eyeHistory}
-    eyeDrops: ${eyeDrops}
-    medConditions: ${medConditions}
-    meds: ${meds}
-    allergies: ${allergies}
-    `;
-
+    console.log(eyeConditions)
+    console.log(eyeHistory)
+    console.log(eyeDrops)
+    console.log(medConditions)
+    console.log(meds)
+    console.log(allergies)
     //navigate to pages to input form data
-    await page.getByRole('button', { name: 'Close', exact: true }).click();  //CLose preview 
-    await page.locator('[data-test-id="patientSummaryMenu"]').click();
-    await page.locator('[data-test-id="examHistoryPodexpand"]').click();
-    await page.getByRole('gridcell', { name: 'No' }).click();
-    await page.getByRole('link', { name: ' History' }).click();
-    //Reason for visit
-    await page.locator('[data-test-id="patientReasonForVisitSection"]').getByRole('textbox', { name: 'textbox' }).fill(output)
-    await page.locator('[data-test-id="encounterWorkflowNextButton"]').click();
-    await page.waitForTimeout(5000)
+
+    //CLose preview 
     
     // await page.locator('[data-test-id="examHistoryMenu"]').click();
     // await page.locator('.e-row > td:nth-child(4)').first().click();
