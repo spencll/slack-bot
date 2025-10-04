@@ -10,6 +10,7 @@ const { WebClient } = require('@slack/web-api');
 const { exec } = require('child_process');
 const findPatient = require('./automation.js')
 const autofill =  require('./autofill.js')
+const pretest = require('./pretest.js');
 
 const killNgrokSessions = () => {
     exec('ngrok kill', (error, stdout, stderr) => {
@@ -37,7 +38,7 @@ app.get('/delete', (req, res) => {
         try {
             // Fetch the conversation history
             const result = await userWeb.conversations.history({
-                channel: process.env.SLACK_TEST_CHANNEL_ID,
+                channel: process.env.SLACK_LIN_CHANNEL_ID,
                 limit: 10, // Adjust the limit as needed
             });
     
@@ -47,7 +48,7 @@ app.get('/delete', (req, res) => {
                     // Use the appropriate token to delete the message
                     const webClient = message.bot_id ? botWeb : userWeb;
                     await webClient.chat.delete({
-                        channel: process.env.SLACK_TEST_CHANNEL_ID,
+                        channel: process.env.SLACK_LIN_CHANNEL_ID,
                         ts: message.ts,
                     });
                     console.log(`Deleted message with timestamp: ${message.ts}`);
@@ -87,36 +88,36 @@ app.post('/slack/events', async (req, res) => {
     const { challenge, event } = req.body;    
     // Respond to Slack's URL verification challenge
     if (challenge) res.send( challenge );
-    
-    // Handle message events
-    if (event && event.type === 'message' && event.text) {
-        const message = event.text.toLowerCase();
-   
-        // final + # does the request.
-        if (message.includes("final") && message.includes("#")) {
 
-            // Extract ID
+    // Extract ID
             function extractID(sentence) {
                 const match = sentence.match(/#(\d+)/); // Regex to find # followed by digits and capture the digits
                 return match ? match[1] : null; // Return only the captured digits
               }
             
+            function debounce(func, delay) {
+                let timer;
+                return (...args) => {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => {
+                        func(...args);
+                    }, delay);
+                };
+            }
+
+    // Handle message events
+    if (event && event.type === 'message' && event.text) {
+        const message = event.text.toLowerCase();
+   
+        // final + # does the request.
+        if (message.includes("final") && message.includes("#") && message.length < 25)  {
+
             function extractNth(sentence){
                 const match = sentence.match(/\s\d+/)
                 return match ? Number(match[0])-1 : null
             }
             const id = extractID(message)
             const nth = extractNth(message)
-
-        function debounce(func, delay) {
-            let timer;
-            return (...args) => {
-                clearTimeout(timer);
-                timer = setTimeout(() => {
-                    func(...args);
-                }, delay);
-            };
-        }
 
         // Prevents multiple calls. 
         const debouncedFindPatient = debounce(async (id, nth) => {
@@ -137,26 +138,10 @@ app.post('/slack/events', async (req, res) => {
         
         debouncedFindPatient(id, nth);
     }
-    //autofill
+    
+        //autofill
             if (message.includes("autofill") && message.includes("#")) {
-
-            // Extract ID
-            function extractID(sentence) {
-                const match = sentence.match(/#(\d+)/); // Regex to find # followed by digits and capture the digits
-                return match ? match[1] : null; // Return only the captured digits
-              }
-
             const id = extractID(message)
-
-        function debounce(func, delay) {
-            let timer;
-            return (...args) => {
-                clearTimeout(timer);
-                timer = setTimeout(() => {
-                    func(...args);
-                }, delay);
-            };
-        }
 
         // Prevents multiple calls. 
         const debouncedAutofill = debounce(async (id) => {
@@ -177,6 +162,34 @@ app.post('/slack/events', async (req, res) => {
         
         debouncedAutofill(id);
     }
+
+    //pretest
+
+     if (message.includes("pretest") && message.includes("#")) {
+
+        const id = extractID(message)
+
+        // Prevents multiple calls. 
+        const debouncedPretest = debounce(async (id) => {
+            const error = await pretest(id);
+            if (error) {
+                postMessage({
+                channel: event.channel,
+                text: `${error}`,
+            });}
+            // Only post the error message once
+            else {   
+                postMessage({
+                    channel: event.channel,
+                    text: `✅`,
+                });
+            }
+        }, 300);
+        
+        debouncedPretest(id);
+    }
+
+
 
 
         //Extracting OV from message. 

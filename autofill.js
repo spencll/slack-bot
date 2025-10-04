@@ -14,7 +14,7 @@ async function autofill(id) {
   let found = false //Flag for if info is found
   
   try{
-    browser = await chromium.launch({ headless: false, args: ['--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage']});
+    browser = await chromium.launch({ headless: true, args: ['--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage']});
     context = await browser.newContext({
       userAgent: process.env.USER_AGENT
     });
@@ -66,7 +66,6 @@ async function autofill(id) {
       .join(" ");
   });
 
-
     const eyeConditions=combinedText.match(/eye conditions:\s*(.*?)\s*Past history/i)?.[1]
     const eyeHistory=combinedText.match(/surgery:\s*(.*?)\s*Eye drops currently used/i)?.[1]
     const eyeDrops=combinedText.match(/Eye drops currently used:\s*(.*?)\s*Currently wear/i)?.[1]
@@ -87,12 +86,12 @@ async function autofill(id) {
     await page.getByRole('button', { name: 'Close', exact: true }).click();  //CLose preview 
     await page.locator('[data-test-id="patientSummaryMenu"]').click();
     await page.locator('[data-test-id="examHistoryPodexpand"]').click();
-    await page.getByRole('gridcell', { name: 'No' }).click();
+    await page.getByRole('gridcell', { name: 'No' }).first().click();
     await page.getByRole('link', { name: ' History' }).click();
     //Reason for visit
     await page.locator('[data-test-id="patientReasonForVisitSection"]').getByRole('textbox', { name: 'textbox' }).fill(output)
     await page.locator('[data-test-id="encounterWorkflowNextButton"]').click();
-    await page.waitForTimeout(5000)
+    await page.waitForTimeout(1000)
     
     // await page.locator('[data-test-id="examHistoryMenu"]').click();
     // await page.locator('.e-row > td:nth-child(4)').first().click();

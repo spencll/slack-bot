@@ -103,7 +103,15 @@ async function findPatient(id, nth) {
   
     // Saving
     await page.locator('[data-test-id="saveAuthButton"]').click();
-    await page.locator('[data-test-id="saveAuthButton"]').waitFor({ state: 'detached' });
+    try {
+      await page.locator('[data-test-id="saveAuthButton"]').waitFor({
+        state: 'detached',
+        timeout: 5000 // timeout in milliseconds
+      });
+} catch (error) {
+  console.log(error)
+  throw new Error('Contact lens mapped to inactive brand. Inform doc to update to latest brand then finalize.');
+}
   }
 
   catch (error){
