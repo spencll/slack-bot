@@ -1,5 +1,5 @@
 # Use the Playwright base image, which includes Node.js and browsers
-FROM mcr.microsoft.com/playwright:v1.37.0
+FROM mcr.microsoft.com/playwright:v1.56.0
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -17,3 +17,4 @@ EXPOSE 8080
 
 # Specify the command to run your app
 CMD ["npm", "run", "dev"]
+

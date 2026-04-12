@@ -1,12 +1,12 @@
 {
   "name": "slack",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "node automation.js",
-    "dev": "node app.js",
-    "postinstall": "playwright install --with-deps"
-    
+    "dev": "USE_NGROK=true node app.js",
+    "dev2": "USE_NGROK=false node app.js"
   },
   "keywords": [],
   "author": "",
@@ -22,7 +22,9 @@
     "express": "^4.21.1",
     "ngrok": "^5.0.0-beta.2",
     "node": "^23.4.0",
+    "node-cache": "^5.1.2",
     "nodemon": "^3.1.7",
-    "playwright": "^1.50.1"
+    "playwright": "^1.56.0",
+    "serve-favicon": "^2.5.1"
   }
 }

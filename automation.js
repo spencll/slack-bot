@@ -1,5 +1,6 @@
-require('dotenv').config();
-const { chromium } = require('playwright');
+import dotenv from 'dotenv';
+dotenv.config();
+import * as browserManager from "./browserManager.js";
 
 async function clickWithTimeout(page, selector, timeout) {
     const timeoutPromise = new Promise((_, reject) => 
@@ -10,22 +11,21 @@ async function clickWithTimeout(page, selector, timeout) {
   }
 
 async function findPatient(id, nth) {
-  let browser, context, page;
+  const start = Date.now()
   let found = false //Flag for if info is found
-  
+  const {page, context} = browserManager.getPage();
   try{
-    browser = await chromium.launch({ headless: true, args: ['--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage']});
-    context = await browser.newContext({
-      userAgent: process.env.USER_AGENT
-    });
-    page = await context.newPage();
-    await page.goto('https://revolutionehr.com/static/#/');
-    console.log("Rev opened")
-    await page.locator('[data-test-id="loginUsername"]').click();
-    await page.locator('[data-test-id="loginUsername"]').fill(process.env.REV_USERNAME);
-    await page.locator('[data-test-id="loginUsername"]').press('Tab');
-    await page.locator('[data-test-id="loginPassword"]').fill(process.env.REV_PASSWORD);
-    await page.locator('[data-test-id="loginBtn"]').click();
+    const now = new Date();
+    const estTime = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York", // Eastern Time zone
+      dateStyle: "full",
+      timeStyle: "long"
+    }).format(now);
+    console.log("Rev opened",estTime)
+    
+    await page.fill('[data-test-id="loginUsername"]', process.env.REV_USERNAME);
+    await page.fill('[data-test-id="loginPassword"]', process.env.REV_PASSWORD);
+    await page.click('[data-test-id="loginBtn"]');
     await page.locator('[data-test-id="headerParentNavigateButtonpatients"]').click();
     // Attempt patient input 
    
@@ -38,10 +38,10 @@ async function findPatient(id, nth) {
           console.log(`Clicked on ${id}`);
           found = true
         } catch (error) {
-          console.log(`${id} not found`);
+
         }
     
-    if (!found) return new Error("Patient not found.")
+    if (!found) throw new Error("Patient not found.")
 
     // Handles patients with alerts
     await page.waitForTimeout(1000)
@@ -55,74 +55,34 @@ async function findPatient(id, nth) {
     await page.locator('[data-test-id="viewHistoryButton"]').click();
     await page.locator('[data-test-id="\\31 "]').click()
     await page.locator('[data-test-id="\\32 "]').click();
-    await page.locator(':text("CL Trial")').first().waitFor({ state: 'visible' });
-  
-    // Specific trial checker 
-//     if (cl || power){
-//     const rows = page.locator('div[role="row"]')
-//     const count = await rows.count();
-//     found = false //Reset flag
-//     for (let i = 0; i < count; i++) {
-//       const row = rows.nth(i);
-//       const html = await row.innerText();
-//       let matchedBrand = null;
-//       // Handles tricky oasys case. 
-//       if (Array.isArray(cl)) matchedBrand = cl.find(brand => html.includes(brand));
-//       else if (html.includes(cl)) matchedBrand = cl; 
-    
-//       if (cl && power) {
-//         if (matchedBrand && html.includes(power)){
-//           console.log(`Trial with brand ${matchedBrand} and power ${power} found`)
-//           found = true
-//           await row.click()
-//           break
-//         }
-//       }
-//       else if (power) {
-//          if (html.includes(power)){
-//           console.log(`Trial with power ${power} found`)
-//           found = true
-//           await row.click()
-//           break
-//         }
-//       }
-//       else if (cl) {
-//         if (matchedBrand) {
-//           console.log(`Trial with brand ${matchedBrand} found`)
-//           found = true
-//           await row.click()
-//           break
-//         }
-//       }
-//   }
-//   if (!found) throw new Error("Specified trial not found")
-// }
-  if (nth) await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).nth(nth).click()
-  //default first option
-  else await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).first().click()
-  
+    //If no trials return
+        try {
+      await page.locator(':text("CL Trial")').first().waitFor({ state: 'visible', timeout: 2000 });
+} catch (error) {
+  throw new Error('No trials found.');
+}
+    await page.locator('[data-test-id="opticalHistoryModal"]').getByRole('gridcell', { name: 'CL Trial' }).nth(nth - 1).click();
+
     // Saving
     await page.locator('[data-test-id="saveAuthButton"]').click();
     try {
       await page.locator('[data-test-id="saveAuthButton"]').waitFor({
         state: 'detached',
-        timeout: 5000 // timeout in milliseconds
+        timeout: 2000 // timeout in milliseconds
       });
 } catch (error) {
-  console.log(error)
   throw new Error('Contact lens mapped to inactive brand. Inform doc to update to latest brand then finalize.');
 }
+   console.log(`Processed in ${(Date.now() - start) / 1000} seconds`);
   }
-
   catch (error){
-    console.log(error)
-    return error
+      console.log(error)
+      return error.message
   }
-  finally {
-    await page.close();
-    await context.close();
-    await browser.close();
+  finally{
+    await context.clearCookies();
+    await page.reload();
   }
-  
 }
-module.exports = findPatient
+
+export default findPatient;
