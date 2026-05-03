@@ -8,9 +8,7 @@ import { exec } from "child_process";
 import findPatient from "./automation.js";
 import NodeCache from "node-cache";
 import * as browserManager from "./browserManager.js";
-
 const app = express();
-const cache = new NodeCache({ stdTTL: 300 }); // 5 minutes
 
 const killNgrokSessions = () => {
   exec("ngrok kill", (error, stdout, stderr) => {
@@ -332,15 +330,15 @@ app.post("/submit", async (req, res) => {
   `);
 });
 
-app.get("/submit/run", async (req, res) => {
-  const {patientId, trialNumber} = req.query;
-  const error = await findPatient(patientId, trialNumber);
-  const status = error ? "error" : "success";
-  const message = error || "✅";
-  res.redirect(
-    `/?patientId=${patientId}&trialNumber=${trialNumber}&status=${status}&message=${encodeURIComponent(message)}`
-  );
-});
+  app.get("/submit/run", async (req, res) => {
+    const {patientId, trialNumber} = req.query;
+    const response = await findPatient(patientId, trialNumber);
+    const status = typeof response === "number" ? "success" : "error";
+    const message = status === "success" ? `✅, finalized in ${response} seconds.` : response;
+    res.redirect(
+      `/?patientId=${patientId}&trialNumber=${trialNumber}&status=${status}&message=${encodeURIComponent(message)}`
+    );
+  });
 
 const PORT = process.env.PORT || 8081;
 http.createServer(app).listen(PORT, () => {

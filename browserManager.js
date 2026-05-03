@@ -10,7 +10,9 @@ export async function init() {
     });
     context = await browser.newContext();
     page = await context.newPage();
-    await page.goto('https://revolutionehr.com/static/#/')
+    page.setDefaultTimeout(5000);
+    page.setDefaultNavigationTimeout(10000);
+    await page.goto(process.env.REV_URL);
   }
   console.log("Browser initialized");
   return { browser, context, page };
